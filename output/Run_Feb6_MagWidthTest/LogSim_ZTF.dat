@@ -1,0 +1,8 @@
+  SNType      Model   Zstart   Zend   Rate   Iteration   RawLCs   FilteredLCs  PeakAbsMag   LCWidth
+    SLSN   Template     0.07    0.2    3.5           4      492           318    -20.642       70
+    SLSN   Template     0.07    0.2    3.5           2      624           376    -21.642       70
+    SLSN   Template     0.07    0.2    3.5           3      696           407    -22.642       70 
+    SLSN   Template     0.07    0.2    3.5           5      723           428    -22.642      105
+    SLSN   Template     0.07    0.2    3.5           6      595           344    -22.642       46.7
+    SLSN   Template     0.07    0.2    3.5           1      712           435    -21.642      105
+    SLSN   Template     0.07    0.2    3.5           0      549           338    -21.642       46.7

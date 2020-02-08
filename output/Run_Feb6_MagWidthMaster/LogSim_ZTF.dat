@@ -1,0 +1,14 @@
+  SNType      Model   Zstart   Zend   Rate   Iteration   RawLCs   FilteredLCs    PeakAbsMag   RiseTime
+    SLSN   Template     0.07    0.3    3.5           7     2041          1219  	   -22.642      70
+    SLSN   Template     0.07    0.3    3.5           6     2085          1262      -23.142      70
+    SLSN   Template     0.07    0.3    3.5           3     1573          1039      -21.642      56 
+    SLSN   Template     0.07    0.3    3.5           2     1815          1132      -21.642      87.5
+    SLSN   Template     0.07    0.3    3.5           0     1988          1249      -21.642     140
+    SLSN   Template     0.07    0.3    3.5          12      837           211      -20.142      70 
+    SLSN   Template     0.07    0.3    3.5          11     1230           472      -20.642      70 
+    SLSN   Template     0.07    0.3    3.5          10     1556           951      -21.142      70
+    SLSN   Template     0.07    0.3    3.5           9     1768          1161      -21.642      70
+    SLSN   Template     0.07    0.3    3.5           8     1841          1170      -22.142      70
+    SLSN   Template     0.07    0.3    3.5           5     1287           868      -21.642      35
+    SLSN   Template     0.07    0.3    3.5           4     1551          1063      -21.642      46.7 
+    SLSN   Template     0.07    0.3    3.5           1     1915          1239      -21.642     105 
