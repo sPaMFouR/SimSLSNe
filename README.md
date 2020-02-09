@@ -13,3 +13,11 @@ Authors
 * **Avinash Singh** (IIA, Bengaluru)
 * **Lin Yan** (Caltech, Pasadena)
 
+
+Requirements
+-------
+
+- astropy
+- sncosmo
+- simsurvey
+- matplotlib, seaborn (for plotting)
