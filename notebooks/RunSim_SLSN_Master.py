@@ -1,6 +1,5 @@
-# Version 0.1
-# Last Update - Feb 5, 2020
-
+#!/usr/bin/env python
+# Last Update - Mar 02, 2020
 # ------------------------------------------------------------------------------------------------------------------- #
 # Import Modules
 # ------------------------------------------------------------------------------------------------------------------- #
@@ -8,6 +7,7 @@ import os
 import sys
 import time
 import pickle
+import random
 import logging
 import datetime
 import warnings
@@ -27,7 +27,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline1d
 warnings.filterwarnings('ignore')
 # ------------------------------------------------------------------------------------------------------------------- #
 
-
 # ------------------------------------------------------------------------------------------------------------------- #
 # Initialize Globals
 # ------------------------------------------------------------------------------------------------------------------- #
@@ -35,7 +34,6 @@ dict_bands = {'ztfg': [4087, 4722.7, 5522], 'ztfr': [5600, 6339.6, 7317], 'desi'
 dict_rlambda = {'ztfg': 3.694, 'ztfr': 2.425, 'desi': 1.718}
 params_magnetar = ['P', 'B', 'Mej', 'Vej', 'kappa', 'kappa_gamma', 'Mns', 'Tf']
 # ------------------------------------------------------------------------------------------------------------------- #
-
 
 # ------------------------------------------------------------------------------------------------------------------- #
 # Initialize Directories
@@ -61,6 +59,9 @@ file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
 
 # Name of the File containing the Template Light Curve
 file_template = os.path.join(DIR_INPUT, "PTF12dam.dat")
+
+# Name of the File containing the probabilities of drawing a Magnetar Model
+file_pdf = os.path.join(DIR_INPUT, "ZTFPDF.dat")
 # ------------------------------------------------------------------------------------------------------------------- #
 
 
@@ -367,8 +368,8 @@ class Load_ZTFData():
         else:
             out_df = out_df[~out_df['fieldid'].isin([880, 881])]
             out_df = out_df[out_df['jd'] > survey_start][out_df['jd'] < survey_end]
-            display_text("Survey pointings for All ZTF Programs: {0}".format(len(out_df)))
-            display_text("Survey pointings for MSIP Programs: {0}".format(len(out_df[out_df['progid'] == 1])))
+            print ("Survey pointings for All ZTF Programs: {0}".format(len(out_df)))
+            print ("Survey pointings for MSIP Programs: {0}".format(len(out_df[out_df['progid'] == 1])))
             return out_df
 
 # ------------------------------------------------------------------------------------------------------------------- #
@@ -393,11 +394,14 @@ class RunSim(Load_ZTFData):
         if not os.path.exists(DIR_OUTPUT):
             os.makedirs(DIR_OUTPUT)
 
-        file_name = "LCS_Raw_SLSN_{0}_{1}_{2}_{3}_{4}.pkl".format(args.type, args.redshift[0],
-                                                                  args.redshift[1], rate, iteration)
+        file_name = "LCS_Raw_SLSN_{0}_{1:0.2f}_{2:0.2f}_{3:0.2f}_{4}.pkl".format(args.type, args.redshift[0],
+                                                                                 args.redshift[1], rate, iteration)
         return DIR_OUTPUT + file_name
 
-    def get_magnetar_params(self, file_param):
+    def get_magnetar_params(self, file_pdf, file_param):
+        pdf_df = pd.read_csv(file_pdf, sep='\s+')
+        mag_arr = pdf_df['mag'].values
+
         try:
             prop_df = pd.read_csv(file_param, sep='\s+', comment='#')
         except OSError or FileNotFoundError:
@@ -411,7 +415,14 @@ class RunSim(Load_ZTFData):
                          'Mns': [1.85, 1.83, 1.83, 1.8, 1.8],
                          'Tf': [6.58e3, 8e3, 6.48e3, 6.78e3, 5.07e3]}
         else:
+            prop_df = prop_df.loc[prop_df['z'] <= 0.4]
             SLSN_prop = {}
+            SLSN_prob = {}
+
+            for idx in range(prop_df.shape[0]):
+                mag = mag_arr[np.abs(mag_arr - prop_df.loc[idx, 'M_g']).argmin()]
+                SLSN_prob[idx] = pdf_df.loc[pdf_df['mag'] == mag, 'prob'].values[0]
+
             for name in params_magnetar:
                 if name == 'B':
                     SLSN_prop[name] = 1e14 * prop_df[name].values
@@ -420,7 +431,7 @@ class RunSim(Load_ZTFData):
                 else:
                     SLSN_prop[name] = prop_df[name].values
 
-        return SLSN_prop
+        return SLSN_prop, SLSN_prob
 
     def run_magnetar(self, raw_df, fields, ccds, rate, args, iteration):
         logging.info('zmin: %f ', args.redshift[0])
@@ -433,14 +444,11 @@ class RunSim(Load_ZTFData):
         dust = sncosmo.CCM89Dust()
         model = sncosmo.Model(source=source, effects=[dust], effect_names=['host'], effect_frames=['rest'])
 
-        SLSN_prop = self.get_magnetar_params(file_param)
+        SLSN_prop, SLSN_prob = self.get_magnetar_params(file_pdf, file_param)
 
         # Randomly draw parameters from SLSN properties
         def random_parameters(redshifts, model, r_v=2., ebv_rate=0.11, sig_mag=0.5, cosmo=Planck15, **kwargs):
-            """
-            """
-            #idx = np.random.randint(0, 1, len(redshifts))
-            idx = np.random.randint(0, len(SLSN_prop['P']), len(redshifts))
+            idx = random.choices(population=list(SLSN_prob.keys()), weights=list(SLSN_prob.values()), k=10000)
             out = {'distance': np.array(cosmo.luminosity_distance(redshifts).value)}
 
             with open('LogSim_Indexes.dat', 'w') as f:
@@ -529,6 +537,12 @@ class RunSim(Load_ZTFData):
         lcs.save(output_filename)
         logging.info('Filename %s', output_filename)
 
+# ------------------------------------------------------------------------------------------------------------------- #
+
+
+# ------------------------------------------------------------------------------------------------------------------- #
+# Main Function
+# ------------------------------------------------------------------------------------------------------------------- #
 
 def main():
     """
@@ -567,7 +581,7 @@ def main():
     def runiter(rate):
         for iteration in range(args.runs):
             display_text("Iteration {0}: z = [{1:.2f}, {2:.2f}], Rate = {3:.2f}e-7".format(iteration, args.redshift[0],
-                                                              				 args.redshift[1], rate))
+                                                                                           args.redshift[1], rate))
             start_time = time.time()
             if args.type == "Magnetar":
                 run_Sim.run_magnetar(df, fields, ccds, rate, args, iteration)
@@ -589,9 +603,10 @@ def main():
     # Run Simulation
     if args.ratetype == 'Single':
         runiter(args.rate)
-    elif args.ratetype == 'Multiple': 
+    elif args.ratetype == 'Multiple':
         for rate in np.arange(args.raterange[0], args.raterange[1], args.raterange[2]):
             runiter(rate)
+
 # ------------------------------------------------------------------------------------------------------------------- #
 
 

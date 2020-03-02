@@ -54,7 +54,7 @@ def display_text(text_to_display):
 
 
 # ------------------------------------------------------------------------------------------------------------------- #
-# Functions for Filtering the Simulated Light Curves Data 
+# Functions for Filtering the Simulated Light Curves Data
 # ------------------------------------------------------------------------------------------------------------------- #
 
 def filter_lcdata(filename, inp_data):
@@ -76,7 +76,7 @@ def filter_lcdata(filename, inp_data):
         lc_df['mag'] = -2.5 * np.log10(lc_df['flux']) + lc_df['zp']
         lc_df['phase'] = lc_df['time'] - inp_data['meta']['t0'][lc]
         lc_df['snr'] = lc_df['flux'] / lc_df['fluxerr']
-        
+
         # Keep the LC points that have an SNR greater than 3 (Essential for filtering)
         lc_df = lc_df[lc_df['snr'] >= 3]
 
@@ -119,13 +119,14 @@ def filter_lcdata(filename, inp_data):
         coord = SkyCoord(ra=ra * u.degree, dec=dec * u.degree, frame='icrs')
         if abs(coord.galactic.b.degree) < gallat_cutoff:
             drop_indices.append(lc)
-            
+
     out_data = inp_data.copy()
     for val in sorted(drop_indices, reverse=True):
         del(out_data['lcs'][val])
     for key in [x for x in out_data.keys() if x in['meta', 'stats']]:
         for val in out_data[key].keys():
-            if not val in ['p_binned', 'mag_max']:
+            # if not val in ['p_binned', 'mag_max']:
+            if val not in ['p_binned', 'mag_max']:
                 out_data[key][val] = np.delete(out_data[key][val], drop_indices, 0)
             else:
                 for subkey in out_data[key][val].keys():
@@ -147,7 +148,7 @@ def main():
     log_df.index.name = 'Name'
 
     for filepath in list_files:
-        filename = filepath.split('/')[-1] 
+        filename = filepath.split('/')[-1]
         display_text("Filtering Pickle File '{0}'...".format(filename))
         data_raw = pickle.load(open(filepath, 'rb'))
 

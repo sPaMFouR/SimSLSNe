@@ -1,6 +1,5 @@
-# Version 0.1
-# Last Update - Feb 7, 2020
-
+#!/usr/bin/env python
+# Last Update - Mar 02, 2020
 # ------------------------------------------------------------------------------------------------------------------- #
 # Import Modules
 # ------------------------------------------------------------------------------------------------------------------- #
@@ -27,15 +26,12 @@ from scipy.interpolate import InterpolatedUnivariateSpline as Spline1d
 warnings.filterwarnings('ignore')
 # ------------------------------------------------------------------------------------------------------------------- #
 
-
 # ------------------------------------------------------------------------------------------------------------------- #
 # Initialize Globals
 # ------------------------------------------------------------------------------------------------------------------- #
 dict_bands = {'ztfg': [4087, 4722.7, 5522], 'ztfr': [5600, 6339.6, 7317], 'desi': [7317, 7886.1, 8884]}
 dict_rlambda = {'ztfg': 3.694, 'ztfr': 2.425, 'desi': 1.718}
-params_magnetar = ['P', 'B', 'Mej', 'Vej', 'kappa', 'kappa_gamma', 'Mns', 'Tf']
 # ------------------------------------------------------------------------------------------------------------------- #
-
 
 # ------------------------------------------------------------------------------------------------------------------- #
 # Initialize Directories
@@ -250,7 +246,7 @@ class RunSim(Load_ZTFData):
             os.makedirs(DIR_OUTPUT)
 
         file_name = "LCS_Raw_SLSN_Template_{1}_{2}_{3}_{4}.pkl".format(args.redshift[0],
-                                                                  args.redshift[1], rate, iteration)
+                                                                       args.redshift[1], rate, iteration)
         return DIR_OUTPUT + file_name
 
     def run_observedtemp(self, raw_df, fields, ccds, rate, args, iteration):
@@ -305,6 +301,12 @@ class RunSim(Load_ZTFData):
         lcs.save(output_filename)
         logging.info('Filename %s', output_filename)
 
+# ------------------------------------------------------------------------------------------------------------------- #
+
+
+# ------------------------------------------------------------------------------------------------------------------- #
+# Main Function
+# ------------------------------------------------------------------------------------------------------------------- #
 
 def main():
     """
@@ -340,7 +342,7 @@ def main():
     def runiter(rate):
         for iteration in range(args.runs):
             display_text("Iteration {0}: z = [{1:.2f}, {2:.2f}], Rate = {3:.2f}e-7".format(iteration, args.redshift[0],
-                                                              				 args.redshift[1], rate))
+                                                                                           args.redshift[1], rate))
             start_time = time.time()
             run_Sim.run_observedtemp(df, fields, ccds, rate, args, iteration)
             display_text("Iteration {0}: Time = {1:.2f} seconds".format(iteration, time.time() - start_time))
@@ -356,7 +358,7 @@ def main():
     # Run Simulation
     if args.ratetype == 'Single':
         runiter(args.rate)
-    elif args.ratetype == 'Multiple': 
+    elif args.ratetype == 'Multiple':
         for rate in np.arange(args.raterange[0], args.raterange[1], args.raterange[2]):
             runiter(rate)
 # ------------------------------------------------------------------------------------------------------------------- #

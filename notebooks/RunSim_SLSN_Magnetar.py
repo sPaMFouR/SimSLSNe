@@ -1,11 +1,12 @@
-# Version 0.1
-
+#!/usr/bin/env python
+# Last Update - Mar 02, 2020
 # ------------------------------------------------------------------------------------------------------------------- #
 # Import Modules
 # ------------------------------------------------------------------------------------------------------------------- #
 import os
 import time
 import pickle
+import random
 import logging
 import datetime
 import numpy as np
@@ -22,14 +23,13 @@ from astropy.coordinates import SkyCoord
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline1d
 # ------------------------------------------------------------------------------------------------------------------- #
 
-
 # ------------------------------------------------------------------------------------------------------------------- #
 # Initialize Globals
 # ------------------------------------------------------------------------------------------------------------------- #
 dict_bands = {'ztfg': [4087, 4722.7, 5522], 'ztfr': [5600, 6339.6, 7317], 'desi': [7317, 7886.1, 8884]}
 dict_rlambda = {'ztfg': 3.694, 'ztfr': 2.425, 'desi': 1.718}
+params_magnetar = ['P', 'B', 'Mej', 'Vej', 'kappa', 'kappa_gamma', 'Mns', 'Tf']
 # ------------------------------------------------------------------------------------------------------------------- #
-
 
 # ------------------------------------------------------------------------------------------------------------------- #
 # Initialize Directories
@@ -52,6 +52,28 @@ survey_file = os.path.join(DIR_DATA, "notebooks/df_sim_stats_full.p")
 
 # File containing the parameters for the Magnetar Model
 file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
+
+# Name of the File containing the probabilities of drawing a Magnetar Model
+file_pdf = os.path.join(DIR_INPUT, "ZTFPDF.dat")
+# ------------------------------------------------------------------------------------------------------------------- #
+
+
+# ------------------------------------------------------------------------------------------------------------------- #
+# Helper Functions
+# ------------------------------------------------------------------------------------------------------------------- #
+
+def display_text(text_to_display):
+    """
+    Displays text mentioned in the string 'text_to_display'
+    Args:
+        text_to_display : Text to be displayed
+    Returns:
+        None
+    """
+    print("# " + "-" * (12 + len(text_to_display)) + " #")
+    print("# " + "-" * 5 + " " + str(text_to_display) + " " + "-" * 5 + " #")
+    print("# " + "-" * (12 + len(text_to_display)) + " #\n")
+
 # ------------------------------------------------------------------------------------------------------------------- #
 
 
@@ -305,18 +327,22 @@ class RunSim(Load_ZTFData):
         logging.info('Days before Survey Start: {0}'.format(self.days_before_start))
         logging.info('Days after Survey End: {0}'.format(self.days_after_end))
 
-    def make_file_name(self, args, i):
+    def make_file_name(self, args, rate, iteration):
         if not os.path.exists(DIR_OUTPUT):
             os.makedirs(DIR_OUTPUT)
 
-        file_name = "LCS_{0}_{1}_{2}_{3}_{4}.pkl".format(args.type, args.redshift[0], args.redshift[1], args.rate, i)
+        file_name = "LCS_Raw_SLSN_{0}_{1:0.2f}_{2:0.2f}_{3:0.2f}_{4}.pkl".format('Magnetar', args.redshift[0],
+                                                                                 args.redshift[1], rate, iteration)
         return DIR_OUTPUT + file_name
 
-    def get_magnetar_params(self, file_param):
+    def get_magnetar_params(self, file_pdf, file_param):
+        pdf_df = pd.read_csv(file_pdf, sep='\s+')
+        mag_arr = pdf_df['mag'].values
+
         try:
             prop_df = pd.read_csv(file_param, sep='\s+', comment='#')
         except OSError or FileNotFoundError:
-            print("ERROR: File with Magnetar Parameters Missing. Using default parameters instead...")
+            display_text("ERROR: File with Magnetar Parameters Missing. Using default parameters instead...")
             SLSN_prop = {'P': [4.78, 2.93, 2.28, 0.98, 3.5],
                          'B': [2.03e14, 1.23e14, 1.8e13, 0.49e14, 1.56e14],
                          'Mej': [2.19, 4.54, 6.27, 33.71, 2.75],
@@ -326,16 +352,28 @@ class RunSim(Load_ZTFData):
                          'Mns': [1.85, 1.83, 1.83, 1.8, 1.8],
                          'Tf': [6.58e3, 8e3, 6.48e3, 6.78e3, 5.07e3]}
         else:
+            prop_df = prop_df.loc[prop_df['z'] <= 0.4]
             SLSN_prop = {}
-            for name in ['P', 'B', 'Mej', 'Vej', 'kappa', 'kappa_gamma', 'Mns', 'Tf']:
-                SLSN_prop[name] = prop_df[name].values
+            SLSN_prob = {}
 
-        return SLSN_prop
+            for idx in range(prop_df.shape[0]):
+                mag = mag_arr[np.abs(mag_arr - prop_df.loc[idx, 'M_g']).argmin()]
+                SLSN_prob[idx] = pdf_df.loc[pdf_df['mag'] == mag, 'prob'].values[0]
 
-    def run_slsn(self, raw_df, fields, ccds, args, i):
+            for name in params_magnetar:
+                if name == 'B':
+                    SLSN_prop[name] = 1e14 * prop_df[name].values
+                elif name == 'Tf':
+                    SLSN_prop[name] = 1e3 * prop_df[name].values
+                else:
+                    SLSN_prop[name] = prop_df[name].values
+
+        return SLSN_prop, SLSN_prob
+
+    def run_magnetar(self, raw_df, fields, ccds, rate, args, iteration):
         logging.info('zmin: %f ', args.redshift[0])
         logging.info('zmax:  %f ', args.redshift[1])
-        logging.info('transient: %s ', args.type)
+        logging.info('transient: %s ', 'Magnetar')
         logging.info('rate: %f ', args.rate * 1e-7)
 
         # Create the Model and combine it with propagation effects
@@ -343,14 +381,20 @@ class RunSim(Load_ZTFData):
         dust = sncosmo.CCM89Dust()
         model = sncosmo.Model(source=source, effects=[dust], effect_names=['host'], effect_frames=['rest'])
 
-        SLSN_prop = self.get_magnetar_params(file_param)
+        SLSN_prop, SLSN_prob = self.get_magnetar_params(file_pdf, file_param)
 
         # Randomly draw parameters from SLSN properties
         def random_parameters(redshifts, model, r_v=2., ebv_rate=0.11, sig_mag=0.5, cosmo=Planck15, **kwargs):
-            idx = np.random.randint(0, len(SLSN_prop['P']), len(redshifts))
+            idx = random.choices(population=list(SLSN_prob.keys()), weights=list(SLSN_prob.values()), k=10000)
             out = {'distance': np.array(cosmo.luminosity_distance(redshifts).value)}
+
+            with open('LogSim_Indexes.dat', 'w') as f:
+                for x, y in enumerate(idx):
+                    f.write("{0} {1}\n".format(x, y))
+
             for key, val in SLSN_prop.items():
                 out[key] = np.array(val)[idx]
+
             return out
 
         plan = simsurvey.SurveyPlan(time=raw_df['jd'], band=raw_df['filterid'], obs_field=raw_df['fieldid'],
@@ -362,7 +406,7 @@ class RunSim(Load_ZTFData):
                      plan.cadence['time'].max() + self.days_after_end)
 
         tr = simsurvey.get_transient_generator((args.redshift[0], args.redshift[1]),
-                                               ratefunc=lambda z: args.rate * 1e-7,
+                                               ratefunc=lambda z: rate * 1e-7,
                                                dec_range=(-31, 90),
                                                mjd_range=(mjd_range[0], mjd_range[1]),
                                                sfd98_dir=DIR_SFD,
@@ -371,10 +415,16 @@ class RunSim(Load_ZTFData):
         survey = simsurvey.SimulSurvey(generator=tr, plan=plan)
         lcs = survey.get_lightcurves(progress_bar=True, notebook=False)
 
-        output_filename = self.make_file_name(args, i)
+        output_filename = self.make_file_name(args, rate, iteration)
         lcs.save(output_filename)
-        logging.info('filename %s', output_filename)
+        logging.info('Filename %s', output_filename)
 
+# ------------------------------------------------------------------------------------------------------------------- #
+
+
+# ------------------------------------------------------------------------------------------------------------------- #
+# Main Function
+# ------------------------------------------------------------------------------------------------------------------- #
 
 def main():
     """
@@ -387,24 +437,35 @@ def main():
 
     parser = ArgumentParser(description='SLSN Rate simulation for ZTF')
 
-    parser.add_argument('-type', type=str, default="SLSN",
-                        help='Transient type ("Ia", "IIP", "IIn", "SLSN")')
+    parser.add_argument('-z', '--redshift', nargs=2, type=float, default=[0.07, 0.4],
+                        help="Redshift Range, [Default = [0.07, 0.4]")
 
-    parser.add_argument('-z', '--redshift', default=[0, 0.04], nargs=2,
-                        help='Redshift Range', type=float)
-
-    parser.add_argument('-data_file', type=str, default=survey_file,
-                        help='ZTF Input Filename')
+    parser.add_argument('-ratetype', type=str, default='Single',
+                        help="Simulation Input ('Single', 'Multiple'), [Default = 'Multiple']")
 
     parser.add_argument('-rate', type=float, default=2.5,
-                        help='modify rate parameter for SN in terms of 10^-7 / yr / MPC, default = 2.5 x 10^-7')
+                        help="Rate Range for SN in terms of 10^-7 / yr / Mpc [Default = 2.5]")
+
+    parser.add_argument('-raterange', nargs=3, type=float, default=[0.2, 2.01, 0.2],
+                        help="Rate Range for SN in terms of 10^-7 / yr / Mpc, [Default = [0.2, 2.0, 0.2]]")
 
     parser.add_argument('-runs', type=int, default=1,
-                        help='run same configuration "runs" times')
+                        help="Run Simulation 'runs' times for each Rate value")
+
+    parser.add_argument('-data_file', type=str, default=survey_file,
+                        help="ZTF Input Filename")
 
     args = parser.parse_args()
 
     run_Sim = RunSim()
+
+    def runiter(rate):
+        for iteration in range(args.runs):
+            display_text("Iteration {0}: z = [{1:.2f}, {2:.2f}], Rate = {3:.2f}e-7".format(iteration, args.redshift[0],
+                                                                                           args.redshift[1], rate))
+            start_time = time.time()
+            run_Sim.run_magnetar(df, fields, ccds, rate, args, iteration)
+            display_text("Iteration {0}: Time = {1:.2f} seconds".format(iteration, time.time() - start_time))
 
     # Load ZTF data
     data_loader = Load_ZTFData()
@@ -412,16 +473,21 @@ def main():
     fields, ccds = data_loader.load_fields_ccd(DIR_INPUT)
 
     df = data_loader.load_modified_input(survey_file)
-    logging.info('data file: %s ', survey_file)
+    logging.info('Input Data File: %s ', survey_file)
 
     # Run Simulation
-    if args.type == "SLSN":
-        for i in range(args.runs):
-            run_Sim.run_slsn(df, fields, ccds, args, i)
-    else:
-        print ("Only Meant to run for SLSN Magnetar Model")
-        sys.exit(1)
+    if args.ratetype == 'Single':
+        runiter(args.rate)
+    elif args.ratetype == 'Multiple':
+        for rate in np.arange(args.raterange[0], args.raterange[1], args.raterange[2]):
+            runiter(rate)
+
+# ------------------------------------------------------------------------------------------------------------------- #
 
 
+# ------------------------------------------------------------------------------------------------------------------- #
+# Execute the Standalone Code
+# ------------------------------------------------------------------------------------------------------------------- #
 if __name__ == '__main__':
     main()
+# ------------------------------------------------------------------------------------------------------------------- #
