@@ -1,0 +1,3 @@
+  SNType      Model   Zstart   Zend   Rate   Iteration   RawLCs   FilteredLCs  
+    SLSN   Magnetar     0.07   0.40   2.50           0     1009           359  
+    SLSN   Magnetar     0.07   0.40   2.50           1      697           201  

@@ -448,7 +448,7 @@ class RunSim(Load_ZTFData):
 
         # Randomly draw parameters from SLSN properties
         def random_parameters(redshifts, model, r_v=2., ebv_rate=0.11, sig_mag=0.5, cosmo=Planck15, **kwargs):
-            idx = random.choices(population=list(SLSN_prob.keys()), weights=list(SLSN_prob.values()), k=10000)
+            idx = random.choices(population=list(SLSN_prob.keys()), weights=list(SLSN_prob.values()), k=len(redshifts))
             out = {'distance': np.array(cosmo.luminosity_distance(redshifts).value)}
 
             with open('LogSim_Indexes.dat', 'w') as f:

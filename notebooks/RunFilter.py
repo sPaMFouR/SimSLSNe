@@ -22,7 +22,7 @@ from astropy.coordinates import SkyCoord
 gallat_cutoff = 10
 mag_band = 'ztfr'
 mag_cutoff = 19.5
-npoints = 4
+npoints = 5
 
 os.environ["HOME"] = "/data/asingh/simsurvey"
 DIR_HOME = os.environ.get("HOME")
@@ -80,16 +80,16 @@ def filter_lcdata(filename, inp_data):
         # Keep the LC points that have an SNR greater than 3 (Essential for filtering)
         lc_df = lc_df[lc_df['snr'] >= 3]
 
-        temp_df = lc_df.loc[(lc_df['band'] == mag_band) & (lc_df['mag'] <= mag_cutoff)]
+        temp = lc_df.loc[(lc_df['band'] == mag_band) & (lc_df['mag'] <= mag_cutoff)]
 
         # Check for LCs that adhere to the Apparent Magnitude cutoff
-        if temp_df.shape[0] < npoints:
+        if temp.shape[0] < npoints:
             drop_indices.append(lc)
             continue
 
-        # Check whether a minimum of 4 detections above the cutoff are separated by atleast 12 hrs.
+        # Check whether a minimum of 5 detections above the cutoff are separated by atleast 12 hrs.
         else:
-            time_diff = np.diff(temp_df['time'].values)
+            time_diff = np.diff(temp['time'].values)
             points_diff = len([val for val in time_diff if abs(val) >= 0.5])
             if points_diff < npoints - 1:
                 drop_indices.append(lc)
@@ -97,10 +97,12 @@ def filter_lcdata(filename, inp_data):
 
             # Check whether there are 3 detections before the maximum or peak <= 18.5 mag
             elif 'Magnetar' in filename:
-                maxmag = temp_df['mag'].min()
-                ep_max = temp_df.loc[temp_df['mag'] == maxmag, 'phase'].values[0]
+                maxmag = temp['mag'].min()
+                ep_max = temp.loc[temp['mag'] == maxmag, 'phase'].values[0]
 
-                if (temp_df[temp_df['phase'] < ep_max].shape[0] >= 2) or (maxmag <= 18.5):
+                if maxmag <= 18.5:
+                    pass
+                elif temp[temp['phase'] < ep_max].shape[0] >= 2 and temp[temp['phase'] > ep_max].shape[0] >= 2:
                     pass
                 else:
                     drop_indices.append(lc)
@@ -108,7 +110,7 @@ def filter_lcdata(filename, inp_data):
 
             # Check whether there are few detections before +50 d
             elif 'Template' in filename:
-                if temp_df[temp_df['phase'] <= 50].shape[0] < npoints:
+                if temp[temp['phase'] <= 50].shape[0] < npoints:
                     drop_indices.append(lc)
                     continue
             else:
