@@ -54,7 +54,8 @@ survey_file = os.path.join(DIR_DATA, "notebooks/df_sim_stats_full.p")
 file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
 
 # Name of the File containing the probabilities of drawing a Magnetar Model
-file_pdf = os.path.join(DIR_INPUT, "ZTFPDF.dat")
+file_pdf = os.path.join(DIR_INPUT, "ZTFPDF_5.dat")
+file_pdf = os.path.join(DIR_INPUT, "LF.dat")
 # ------------------------------------------------------------------------------------------------------------------- #
 
 
@@ -294,7 +295,7 @@ class Load_ZTFData():
         """
         dict_filterid = {1: 'ztfg', 2: 'ztfr', 3: 'desi'}
         survey_start = Time("2018-03-17 00:00:00.000").jd
-        survey_end = Time("2018-10-31 00:00:00.000").jd
+        survey_end = Time("2019-12-31 00:00:00.000").jd
 
         inp_df = pd.read_pickle(filename)
         out_df = inp_df.copy()

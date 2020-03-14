@@ -23,7 +23,7 @@ os.environ["HOME"] = "/data/asingh/simsurvey"
 DIR_HOME = os.environ.get("HOME")
 DIR_INPUT = os.path.join(DIR_HOME, "data/")
 
-bins = 5
+bins = 6
 file_sample = os.path.join(DIR_INPUT, "ZTFSample.csv")
 outfile_pdf = os.path.join(DIR_INPUT, "ZTFPDF_{0}.dat".format(bins))
 
