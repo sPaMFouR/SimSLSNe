@@ -280,8 +280,8 @@ class Load_ZTFData():
         bands = {'ztfg': 'ztfg_eff.txt', 'ztfr': 'ztfr_eff.txt', 'ztfi': 'ztfi_eff.txt'}
 
         for band in bands.keys():
-            filename = os.path.join(DIR_INPUT, bands[band])
-            bpass = np.loadtxt(os.path.join(dir_bandpass, filename))
+            # filename = os.path.join(DIR_INPUT, bands[band])
+            bpass = np.loadtxt(os.path.join(dir_bandpass, bands[band]))
             bandname = sncosmo.Bandpass(bpass[:, 0], bpass[:, 1], name=band)
             sncosmo.registry.register(bandname, force=True)
 
