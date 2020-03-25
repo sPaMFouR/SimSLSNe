@@ -55,7 +55,7 @@ file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
 
 # Name of the File containing the probabilities of drawing a Magnetar Model
 file_pdf = os.path.join(DIR_INPUT, "ZTFPDF_5.dat")
-file_pdf = os.path.join(DIR_INPUT, "LF.dat")
+# file_pdf = os.path.join(DIR_INPUT, "LF.dat")
 # ------------------------------------------------------------------------------------------------------------------- #
 
 
