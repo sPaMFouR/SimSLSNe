@@ -287,7 +287,7 @@ class RunSim(Load_ZTFData):
 
         # Input to the Transient Generator
         tr = simsurvey.get_transient_generator((args.redshift[0], args.redshift[1]),
-                                               ratefunc=lambda z: rate * 1e-7,
+                                               ratefunc=lambda z: rate * (1 + z) * 1e-7,
                                                dec_range=(-31, 90),
                                                mjd_range=(mjd_range[0], mjd_range[1]),
                                                sfd98_dir=DIR_SFD,

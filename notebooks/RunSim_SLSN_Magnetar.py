@@ -54,8 +54,8 @@ survey_file = os.path.join(DIR_DATA, "notebooks/df_sim_stats_full.p")
 file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
 
 # Name of the File containing the probabilities of drawing a Magnetar Model
-file_pdf = os.path.join(DIR_INPUT, "ZTFPDF_5.dat")
-# file_pdf = os.path.join(DIR_INPUT, "LF.dat")
+# file_pdf = os.path.join(DIR_INPUT, "ZTFPDF_5.dat")
+file_pdf = os.path.join(DIR_INPUT, "LFV2.dat")
 # ------------------------------------------------------------------------------------------------------------------- #
 
 
@@ -407,7 +407,7 @@ class RunSim(Load_ZTFData):
                      plan.cadence['time'].max() + self.days_after_end)
 
         tr = simsurvey.get_transient_generator((args.redshift[0], args.redshift[1]),
-                                               ratefunc=lambda z: rate * 1e-7,
+                                               ratefunc=lambda z: rate * (1 + z) * 1e-7,
                                                dec_range=(-31, 90),
                                                mjd_range=(mjd_range[0], mjd_range[1]),
                                                sfd98_dir=DIR_SFD,
