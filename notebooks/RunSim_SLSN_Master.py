@@ -55,7 +55,8 @@ DIR_DATA = "/data/cfremling/simsurvey"
 survey_file = os.path.join(DIR_DATA, "notebooks/df_sim_stats_full.p")
 
 # Name of the File containing the parameters for the Magnetar Model
-file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
+# file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
+file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar_Flat.dat")
 
 # Name of the File containing the Template Light Curve
 file_template = os.path.join(DIR_INPUT, "PTF12dam.dat")
@@ -415,7 +416,7 @@ class RunSim(Load_ZTFData):
                          'Mns': [1.85, 1.83, 1.83, 1.8, 1.8],
                          'Tf': [6.58e3, 8e3, 6.48e3, 6.78e3, 5.07e3]}
         else:
-            prop_df = prop_df.loc[prop_df['z'] <= 0.4]
+            # prop_df = prop_df.loc[prop_df['z'] <= 0.4]
             SLSN_prop = {}
             SLSN_prob = {}
 

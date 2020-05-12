@@ -81,7 +81,7 @@ def filter_lcdata(filename, inp_data):
         lc_df = lc_df[lc_df['snr'] >= 3]
 
         temp = lc_df.loc[(lc_df['band'] == mag_band) & (lc_df['mag'] <= mag_cutoff)]
-
+        
         # Check for LCs that adhere to the Apparent Magnitude cutoff
         if temp.shape[0] < npoints:
             drop_indices.append(lc)

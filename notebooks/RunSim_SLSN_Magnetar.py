@@ -51,7 +51,8 @@ DIR_DATA = "/data/cfremling/simsurvey"
 survey_file = os.path.join(DIR_DATA, "notebooks/df_sim_stats_full.p")
 
 # File containing the parameters for the Magnetar Model
-file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
+#file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
+file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar_Flat.dat")
 
 # Name of the File containing the probabilities of drawing a Magnetar Model
 # file_pdf = os.path.join(DIR_INPUT, "ZTFPDF_5.dat")
@@ -353,7 +354,7 @@ class RunSim(Load_ZTFData):
                          'Mns': [1.85, 1.83, 1.83, 1.8, 1.8],
                          'Tf': [6.58e3, 8e3, 6.48e3, 6.78e3, 5.07e3]}
         else:
-            prop_df = prop_df.loc[prop_df['z'] <= 0.4]
+            # prop_df = prop_df.loc[prop_df['z'] <= 0.4]
             SLSN_prop = {}
             SLSN_prob = {}
 
@@ -383,7 +384,7 @@ class RunSim(Load_ZTFData):
         model = sncosmo.Model(source=source, effects=[dust], effect_names=['host'], effect_frames=['rest'])
 
         SLSN_prop, SLSN_prob = self.get_magnetar_params(file_pdf, file_param)
-
+        print (SLSN_prob)
         # Randomly draw parameters from SLSN properties
         def random_parameters(redshifts, model, r_v=2., ebv_rate=0.11, sig_mag=0.5, cosmo=Planck15, **kwargs):
             idx = random.choices(population=list(SLSN_prob.keys()), weights=list(SLSN_prob.values()), k=len(redshifts))
