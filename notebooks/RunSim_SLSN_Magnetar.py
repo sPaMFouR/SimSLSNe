@@ -51,12 +51,12 @@ DIR_DATA = "/data/cfremling/simsurvey"
 survey_file = os.path.join(DIR_DATA, "notebooks/df_sim_stats_full.p")
 
 # File containing the parameters for the Magnetar Model
-#file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
+# file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar.dat")
 file_param = os.path.join(DIR_INPUT, "Nicholl_Magnetar_Flat.dat")
 
 # Name of the File containing the probabilities of drawing a Magnetar Model
 # file_pdf = os.path.join(DIR_INPUT, "ZTFPDF_5.dat")
-file_pdf = os.path.join(DIR_INPUT, "LFV2.dat")
+file_pdf = os.path.join(DIR_INPUT, "LFV3.dat")
 # ------------------------------------------------------------------------------------------------------------------- #
 
 
